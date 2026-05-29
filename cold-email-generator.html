@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cold Email Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&family=Cormorant+Garamond:ital,wght@1,400;1,500&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0d0d0f;
+    --surface: #16161a;
+    --surface2: #1e1e24;
+    --border: rgba(255,255,255,0.07);
+    --border-hover: rgba(255,255,255,0.14);
+    --text: #f0efe8;
+    --text-muted: #888580;
+    --text-dim: #4a4845;
+    --accent: #c8f060;
+    --purple: #a78bfa;
+    --teal: #5eead4;
+    --coral: #fb7185;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; font-weight: 300; min-height: 100vh; line-height: 1.6; }
+  .page { max-width: 720px; margin: 0 auto; padding: 64px 24px 96px; }
+  .header { margin-bottom: 52px; }
+  .badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(200,240,96,0.08); border: 0.5px solid rgba(200,240,96,0.2); border-radius: 20px; padding: 5px 14px; font-size: 12px; font-weight: 500; color: var(--accent); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 20px; }
+  .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+  h1 { font-family: 'DM Serif Display', serif; font-size: clamp(36px, 5vw, 52px); font-weight: 400; line-height: 1.1; color: var(--text); margin-bottom: 14px; }
+  h1 em { font-style: italic; color: var(--accent); }
+  .subtitle { font-size: 15px; color: var(--text-muted); max-width: 480px; line-height: 1.7; }
+  .form-section { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 32px; margin-bottom: 24px; }
+  .form-section h2 { font-family: 'DM Serif Display', serif; font-size: 18px; font-weight: 400; color: var(--text); margin-bottom: 24px; padding-bottom: 16px; border-bottom: 0.5px solid var(--border); }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  .field.full { grid-column: 1 / -1; }
+  label { font-size: 11px; font-weight: 500; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; }
+  input, textarea { background: var(--surface2); border: 0.5px solid var(--border); border-radius: var(--radius-sm); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 300; padding: 12px 16px; transition: border-color 0.2s; outline: none; width: 100%; }
+  input::placeholder, textarea::placeholder { color: var(--text-dim); }
+  input:focus, textarea:focus { border-color: rgba(200,240,96,0.3); background: rgba(200,240,96,0.02); }
+  textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+  .generate-btn { width: 100%; padding: 16px 24px; background: var(--accent); color: #0d0d0f; border: none; border-radius: var(--radius-sm); font-family: 'DM Sans', sans-serif; font-size: 15px; font-weight: 500; cursor: pointer; transition: background 0.2s, transform 0.1s; letter-spacing: 0.01em; margin-top: 8px; }
+  .generate-btn:hover { background: #d4f070; }
+  .generate-btn:active { transform: scale(0.99); }
+  .generate-btn:disabled { background: var(--text-dim); cursor: not-allowed; color: var(--surface); }
+  .loader { display: none; text-align: center; padding: 48px 0; color: var(--text-muted); }
+  .loader.visible { display: block; }
+  .loader-bar { width: 120px; height: 2px; background: var(--border); border-radius: 2px; margin: 20px auto 0; overflow: hidden; }
+  .loader-bar-inner { height: 100%; background: var(--accent); border-radius: 2px; animation: loading 1.4s ease-in-out infinite; width: 40%; }
+  @keyframes loading { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
+  .results { margin-top: 8px; }
+  .email-card { background: var(--surface); border: 0.5px solid var(--border); border-radius: var(--radius); padding: 28px 32px; margin-bottom: 16px; transition: border-color 0.2s; opacity: 0; transform: translateY(12px); animation: fadeUp 0.4s ease forwards; }
+  @keyframes fadeUp { to { opacity: 1; transform: translateY(0); } }
+  .email-card:hover { border-color: var(--border-hover); }
+  .email-card:nth-child(2) { animation-delay: 0.1s; }
+  .email-card:nth-child(3) { animation-delay: 0.2s; }
+  .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .variant-tag { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; padding: 4px 12px; border-radius: 20px; }
+  .tag-1 { background: rgba(167,139,250,0.12); color: var(--purple); }
+  .tag-2 { background: rgba(94,234,212,0.1); color: var(--teal); }
+  .tag-3 { background: rgba(251,113,133,0.1); color: var(--coral); }
+  .copy-btn { background: none; border: 0.5px solid var(--border); border-radius: var(--radius-sm); color: var(--text-muted); font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 6px 14px; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+  .copy-btn:hover { border-color: var(--border-hover); color: var(--text); }
+  .copy-btn.copied { border-color: rgba(200,240,96,0.3); color: var(--accent); }
+  .subject-line { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; padding-bottom: 12px; border-bottom: 0.5px solid var(--border); }
+  .subject-line span { color: var(--text); font-weight: 400; }
+  .email-body { font-size: 14px; color: var(--text); line-height: 1.8; white-space: pre-wrap; font-weight: 300; }
+  .error { background: rgba(251,113,133,0.08); border: 0.5px solid rgba(251,113,133,0.2); border-radius: var(--radius-sm); color: var(--coral); font-size: 13px; padding: 14px 18px; margin-top: 16px; }
+  .site-footer { margin-top: 64px; text-align: center; padding-top: 24px; border-top: 0.5px solid var(--border); }
+  .signature { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 20px; font-weight: 400; color: var(--text-muted); text-decoration: none; letter-spacing: 0.03em; transition: color 0.2s; }
+  .signature:hover { color: var(--accent); }
+  .signature-sub { font-family: 'DM Sans', sans-serif; font-size: 11px; color: var(--text-dim); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 6px; }
+  @media (max-width: 540px) { .form-grid { grid-template-columns: 1fr; } .field.full { grid-column: 1; } .form-section { padding: 24px 20px; } .email-card { padding: 20px; } }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="badge">AI powered</div>
+    <h1>Cold emails that<br><em>actually land</em></h1>
+    <p class="subtitle">Enter your prospect details and get three personalized email variants, each with a different angle.</p>
+  </div>
+  <div class="form-section">
+    <h2>Prospect details</h2>
+    <div class="form-grid">
+      <div class="field">
+        <label>Prospect role</label>
+        <input type="text" id="role" placeholder="e.g. VP of Sales" />
+      </div>
+      <div class="field">
+        <label>Company / industry</label>
+        <input type="text" id="company" placeholder="e.g. SaaS startup, 50 people" />
+      </div>
+      <div class="field full">
+        <label>Their pain point</label>
+        <input type="text" id="pain" placeholder="e.g. reps spending hours on manual prospecting" />
+      </div>
+      <div class="field full">
+        <label>What you are offering</label>
+        <textarea id="offer" placeholder="e.g. AI tool that automates prospect research and personalises outreach at scale"></textarea>
+      </div>
+    </div>
+    <button class="generate-btn" onclick="generate()" id="gen-btn">Generate 3 email variants</button>
+  </div>
+  <div class="loader" id="loader">
+    <div style="font-size: 14px; color: var(--text-muted);">Writing your emails...</div>
+    <div class="loader-bar"><div class="loader-bar-inner"></div></div>
+  </div>
+  <div class="results" id="results"></div>
+  <footer class="site-footer">
+    <a href="#" class="signature">Built by PTxAI</a>
+    <div class="signature-sub">GTM &times; Artificial Intelligence</div>
+  </footer>
+</div>
+<script>
+var GROQ_KEY = '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';
+
+function generate() {
+  var role = document.getElementById('role').value.trim();
+  var company = document.getElementById('company').value.trim();
+  var pain = document.getElementById('pain').value.trim();
+  var offer = document.getElementById('offer').value.trim();
+  var results = document.getElementById('results');
+  var loader = document.getElementById('loader');
+  var btn = document.getElementById('gen-btn');
+
+  if (!role || !company || !pain || !offer) {
+    results.innerHTML = '<div class="error">Please fill in all prospect details before generating.</div>';
+    return;
+  }
+
+  results.innerHTML = '';
+  loader.classList.add('visible');
+  btn.disabled = true;
+  btn.textContent = 'Generating...';
+
+  var systemPrompt = 'You are a world-class GTM strategist and cold email copywriter. Write 3 cold email variants. Each body must be under 100 words. Human, specific, never salesy. Return ONLY valid JSON with no markdown and no backticks in this exact shape: {"emails": [{"variant": "Pain-led", "subject": "...", "body": "..."}, {"variant": "Curiosity-led", "subject": "...", "body": "..."}, {"variant": "Social proof-led", "subject": "...", "body": "..."}]}';
+
+  var userPrompt = 'Prospect role: ' + role + '\nCompany / industry: ' + company + '\nTheir pain point: ' + pain + '\nWhat is being offered: ' + offer;
+
+  fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + GROQ_KEY
+    },
+    body: JSON.stringify({
+      model: 'llama-3.3-70b-versatile',
+      temperature: 0.8,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
+      ]
+    })
+  })
+  .then(function(res) { return res.json(); })
+  .then(function(data) {
+    if (data.error) throw new Error(data.error.message);
+    var raw = data.choices[0].message.content;
+    var clean = raw.replace(/```json|```/g, '').trim();
+    var parsed = JSON.parse(clean);
+    var tags = ['tag-1', 'tag-2', 'tag-3'];
+    var html = '';
+    parsed.emails.forEach(function(email, i) {
+      html += '<div class="email-card">'
+        + '<div class="card-header">'
+        + '<span class="variant-tag ' + tags[i] + '">' + email.variant + '</span>'
+        + '<button class="copy-btn" id="copy-' + i + '" onclick="copyEmail(' + i + ')">'
+        + '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>'
+        + ' Copy</button></div>'
+        + '<div class="subject-line">Subject: <span>' + email.subject + '</span></div>'
+        + '<div class="email-body" id="body-' + i + '">' + email.body + '</div>'
+        + '</div>';
+    });
+    results.innerHTML = html;
+  })
+  .catch(function(err) {
+    results.innerHTML = '<div class="error">Something went wrong: ' + err.message + '</div>';
+  })
+  .finally(function() {
+    loader.classList.remove('visible');
+    btn.disabled = false;
+    btn.textContent = 'Generate 3 email variants';
+  });
+}
+
+function copyEmail(i) {
+  var body = document.getElementById('body-' + i).innerText;
+  var subjects = document.querySelectorAll('.subject-line span');
+  var full = 'Subject: ' + subjects[i].innerText + '\n\n' + body;
+  navigator.clipboard.writeText(full).then(function() {
+    var btn = document.getElementById('copy-' + i);
+    btn.classList.add('copied');
+    btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+    setTimeout(function() {
+      btn.classList.remove('copied');
+      btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy';
+    }, 2000);
+  });
+}
+</script>
+</body>
+</html>
